@@ -6,8 +6,18 @@
 
 # My Hardware
 - [Heltec Lora Esp32 Dev Board](https://www.bastelgarage.ch/heltec-automation/wifi-lora-32-v2-sx1276-868mhz-mit-oled)
-- [IR Read and Write Head](https://www.ebay.de/itm/313460034498)
+- [Optical reading head](https://www.ebay.de/itm/313460034498)
 - [Elster AS3000](https://wiki.volkszaehler.org/hardware/channels/meters/power/edl-ehz/elster_as3000)
+
+
+# Configuration
+- Rename credentials_example.h to credentials.h and provide your OTAA data
+- Check/adjust the config.h and main.cpp
+
+
+## Acknowledgements 
+- https://github.com/mwdmwd/iec62056-mqtt
+- https://wiki.volkszaehler.org/hardware/channels/meters/power/edl-ehz/elster_as1440#quellen
 
 
 # Home-Assitant Template Sensors
