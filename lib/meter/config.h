@@ -4,7 +4,11 @@
    "230.5" instead of "230.5*V" */
 #define STRIP_UNIT
 
-#define DUMMY_PIN 23 // Set to an unused pin (needed to switch between RX and TX onlny)
+/* Set to an unused pin (needed to switch between RX and TX only) */
+#define DUMMY_PIN 23
+
+/* Uncomment to verify the checksum */
+#define SKIP_CHECKSUM_CHECK
 
 /* An additional layer of protection against bit flips: the values of all exported
    objects are checked, and if they contain any characters other than these, the

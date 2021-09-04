@@ -65,8 +65,7 @@ enum class MeterReader::Step : uint8_t
 
 void MeterReader::send_request()
 {
-  //Serial.println("Step -> send_request");
-  serial_.setTimeout(4000);
+  serial_.setTimeout(SERIAL_TIMEOUT * 2); // double the normal timeout at the bginning
   serial_.begin(INITIAL_BAUD_RATE, SERIAL_7E1, rx_, tx_, IRINVERTED);
   serial_.write("/?!\r\n");
   serial_.flush();
@@ -76,8 +75,7 @@ void MeterReader::send_request()
 
 void MeterReader::read_identification()
 {
-  Serial.println("Step -> read_identification");
-  //serial_.begin(INITIAL_BAUD_RATE, SERIAL_7E1, rx_, DUMMY_PIN, IRINVERTED);
+  //serial_.begin(INITIAL_BAUD_RATE, SERIAL_7E1, rx_, DUMMY_PIN, IRINVERTED); // not needed
   char identification[MAX_IDENTIFICATION_LENGTH];
   size_t len = serial_.readBytesUntil('\n', identification, MAX_IDENTIFICATION_LENGTH);
   std::experimental::string_view id_view(identification, len);
@@ -93,7 +91,7 @@ void MeterReader::read_identification()
   if (identifierChars_ != NULL && id_view.find(identifierChars_) == std::experimental::string_view::npos)
   {
     Serial.printf("identification not machted: %s \n", identification);
-    return change_status(Status::IdentificationError_2);
+    return change_status(Status::IdentificationError_Id_Mismatch);
   }
 
   identification[len - 1] = 0; /* Remove \r and null terminate */
@@ -106,8 +104,8 @@ void MeterReader::read_identification()
 #endif
 
   step_ = Step::IdentificationRead;
-  serial_.setTimeout(2000);
-  delay(1000);
+  serial_.setTimeout(SERIAL_TIMEOUT);
+  delay(1000); // not sure if needed anymore....
 }
 
 void MeterReader::switch_baud()
@@ -117,7 +115,7 @@ void MeterReader::switch_baud()
 
   if (params.send_acknowledgement)
   {
-    //serial_.begin(INITIAL_BAUD_RATE, SERIAL_7E1, DUMMY_PIN, tx_, IRINVERTED);
+    //serial_.begin(INITIAL_BAUD_RATE, SERIAL_7E1, DUMMY_PIN, tx_, IRINVERTED);  // not needed
     serial_.printf(ACK "0%c0\r\n", baud_char_);
     serial_.flush();
   }
@@ -217,27 +215,29 @@ void MeterReader::handle_object(std::experimental::string_view obis, std::experi
 
 void MeterReader::verify_checksum()
 {
+#ifndef SKIP_CHECKSUM_CHECK
   /* Expecting ETX and then the checksum */
-  //  uint8_t etx_bcc[2];
-  //  if (serial_.readBytes(etx_bcc, 2) != 2 || etx_bcc[0] != ETX)
-  //  {
-  //    Serial.println("failed to read checksum");
-  //    return change_status(Status::ProtocolError);
-  //  }
-  //
-  //  checksum_ ^= ETX;
-  //  if (checksum_ != etx_bcc[1])
-  //  {
-  //    Serial.printf("checksum mismatch: %02" PRIx8 " != %02" PRIx8, checksum_, etx_bcc[1]);
-  //    return change_status(Status::ChecksumError);
-  //  }
+  uint8_t etx_bcc[2];
+  if (serial_.readBytes(etx_bcc, 2) != 2 || etx_bcc[0] != ETX)
+  {
+    Serial.println("failed to read checksum");
+    return change_status(Status::ProtocolError);
+  }
+
+  checksum_ ^= ETX;
+  if (checksum_ != etx_bcc[1])
+  {
+    Serial.printf("checksum mismatch: %02" PRIx8 " != %02" PRIx8, checksum_, etx_bcc[1]);
+    return change_status(Status::ChecksumError);
+  }
+#endif
 
   return change_status(Status::Ok); /* Data readout successful */
 }
 
 void MeterReader::change_status(Status to)
 {
-  if (to == Status::ProtocolError || to == Status::IdentificationError || to == Status::IdentificationError_2 || to == Status::TimeoutError)
+  if (to == Status::ProtocolError || to == Status::IdentificationError || to == Status::IdentificationError_Id_Mismatch || to == Status::TimeoutError)
     ++errors_;
   else if (to == Status::ChecksumError)
     ++checksum_errors_;
@@ -283,9 +283,7 @@ void MeterReader::loop()
     return;
 
   if (startTime_ + (MAX_METER_READ_TIME * 1000) < millis())
-  {
     return change_status(Status::TimeoutError);
-  }
 
   switch (step_)
   {

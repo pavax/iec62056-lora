@@ -21,7 +21,7 @@ RTC_DATA_ATTR RetryReason lastRetryReason;
 RTC_DATA_ATTR float retrySleepTime;             // Every time there's an error, this delay is doubled, up to a maximum. [seconds]
 const unsigned int INITAL_RETRY_SLEEP_TIME = 1; // start retry time [seconds]
 const float BACKOFF_MULTIPLIER = 1.5;           // 1   2   3   5   7   11    17    25    38    57    86    129   194    291     436
-const unsigned DEEP_SLEEP_TIME = 600;           // normnal deep sleep time [seconds]
+const unsigned DEEP_SLEEP_TIME = 600;           // normal deep sleep time [seconds]
 
 char sendingStatus[10];
 double power, totalkWh;
@@ -30,7 +30,7 @@ int batteryPct = 0;
 /**********
  * LORA
  **********/
-const unsigned MAX_SENDING_TIME = 20;                    // max time to send the message to ttn [seconds]
+const unsigned MAX_SENDING_TIME = 20; // max time to send the message to ttn [seconds]
 TTN_esp32 ttn;
 
 /**********
@@ -41,16 +41,16 @@ U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, /* clock=*/15, /* data=*/4, /*
 /**********
  * BATTERY 
  **********/
-#define MAXBATT 4200                             // The default Lipo is 4200mv when the battery is fully charged.
-#define LIGHT_SLEEP_VOLTAGE 3750                 // Point where start light sleep
+#define MAXBATT 4200 // The default Lipo is 4200mv when the battery is fully charged.
+//#define LIGHT_SLEEP_VOLTAGE 3750                 // Point where start light sleep
 #define MINBATT 3200                             // The default Lipo is 3200mv when the battery is empty...this WILL be low on the 3.3v rail specs!!!
 #define VOLTAGE_DIVIDER 3.20                     // Lora has 220k/100k voltage divider so need to reverse that reduction via (220k+100k)/100k on vbat GPIO37 or ADC1_1 (early revs were GPIO13 or ADC2_4 but do NOT use with WiFi.begin())
 #define DEFAULT_VREF 1100                        // Default VREF use if no e-fuse calibration
-#define VBATT_SMOOTH 50                          // Number of averages in sample
+#define VBATT_SMOOTH 64                          // Number of averages in sample
 #define ADC_READ_STABILIZE 5                     // in ms (delay from GPIO control and ADC connections times)
 #define LO_BATT_SLEEP_TIME 10 * 60 * 1000 * 1000 // How long when low batt to stay in sleep (us)
 #define HELTEC_V2_1 1                            // Set this to switch between GPIO13(V2.0) and GPIO37(V2.1) for VBatt ADC.
-#define VBATT_GPIO 21                            // Heltec GPIO to toggle VBatt read connection ... WARNING!!! This also connects VEXT to VCC=3.3v so be careful what is on header.  Also, take care NOT to have ADC read connection in OPEN DRAIN when GPIO goes HIGH
+//#define VBATT_GPIO Vext                          // Heltec GPIO to toggle VBatt read connection ... WARNING!!! This also connects VEXT to VCC=3.3v so be careful what is on header.  Also, take care NOT to have ADC read connection in OPEN DRAIN when GPIO goes HIGH
 //#define __DEBUG 1                              // DEBUG Serial output
 esp_adc_cal_characteristics_t *adc_chars;
 RunningAverage batteryValues(VBATT_SMOOTH);
@@ -58,8 +58,6 @@ RunningAverage batteryValues(VBATT_SMOOTH);
 /**********
  * OPTICAL METER
  **********/
-
-const uint32_t SERIAL_TIMEOUT = 2000; // How long to wait for the meter to send responses to our requests. [ms]
 char const *const EXPORT_OBJECTS[] = {
     "1.7.0", // momentane leistung
     "1.8.0"  // total kwh
@@ -113,17 +111,16 @@ uint16_t readBatteryVoltageSample()
 {
   // Poll the proper ADC for VBatt on Heltec Lora 32 with GPIO21 toggled
   uint16_t reading = 666;
-
-  digitalWrite(VBATT_GPIO, LOW); // ESP32 Lora v2.1 reads on GPIO37 when GPIO21 is low
-  delay(ADC_READ_STABILIZE);     // let GPIO stabilize
+  digitalWrite(Vext, LOW);   // ESP32 Lora v2.1 reads on GPIO37 when GPIO21 is low
+  delay(ADC_READ_STABILIZE); // let GPIO stabilize
 #if (defined(HELTEC_V2_1))
-  pinMode(ADC1_CHANNEL_1, OPEN_DRAIN); // ADC GPIO37
-  reading = adc1_get_raw(ADC1_CHANNEL_1);
-  pinMode(ADC1_CHANNEL_1, INPUT); // Disconnect ADC before GPIO goes back high so we protect ADC from direct connect to VBATT (i.e. no divider)
+  pinMode(ADC1_GPIO37_CHANNEL, OPEN_DRAIN); // ADC GPIO37
+  reading = adc1_get_raw(ADC1_GPIO37_CHANNEL);
+  pinMode(ADC1_GPIO37_CHANNEL, INPUT); // Disconnect ADC before GPIO goes back high so we protect ADC from direct connect to VBATT (i.e. no divider)
 #else
-  pinMode(ADC2_CHANNEL_4, OPEN_DRAIN); // ADC GPIO13
-  adc2_get_raw(ADC2_CHANNEL_4, ADC_WIDTH_BIT_12, &reading);
-  pinMode(ADC2_CHANNEL_4, INPUT); // Disconnect ADC before GPIO goes back high so we protect ADC from direct connect to VBATT (i.e. no divider
+  pinMode(ADC2_GPIO13_CHANNEL, OPEN_DRAIN); // ADC GPIO13
+  adc2_get_raw(ADC2_GPIO13_CHANNEL, ADC_WIDTH_BIT_12, &reading);
+  pinMode(ADC2_GPIO13_CHANNEL, INPUT); // Disconnect ADC before GPIO goes back high so we protect ADC from direct connect to VBATT (i.e. no divider
 #endif
 
   uint16_t voltage = esp_adc_cal_raw_to_voltage(reading, adc_chars);
@@ -145,10 +142,10 @@ std::string meterStatus()
     return "Ok";
   case MeterReader::Status::TimeoutError:
     return "Timeout";
-  case MeterReader::Status::IdentificationError_2:
-    return "Err-Idn_2";
   case MeterReader::Status::IdentificationError:
-    return "Err-Idn_1";
+    return "Err-Idn-1";
+  case MeterReader::Status::IdentificationError_Id_Mismatch:
+    return "Err-Idn-2";
   case MeterReader::Status::ProtocolError:
     return "Err-Pro";
   case MeterReader::Status::ChecksumError:
@@ -164,7 +161,7 @@ void displayUpdate()
   u8g2.setFont(u8g2_font_amstrad_cpc_extended_8f);
 
   u8g2.setCursor(3, 10);
-  
+
   u8g2.print("Watt:");
   u8g2.printf("%10.0f", power);
   u8g2.print("");
@@ -200,7 +197,7 @@ void displayUpdate()
 
 void batteryUpdate()
 {
-  for (int x = 0; x <= 100; x++)
+  for (int x = 0; x <= VBATT_SMOOTH; x++)
   {
     auto value = readBatteryVoltageSample();
     batteryValues.addValue(value);
@@ -226,7 +223,7 @@ void goDeepSleep(unsigned deepSleepTime)
   Serial2.flush();
   Serial.end();
   Serial2.end();
-  digitalWrite(VBATT_GPIO, HIGH);    // Turn off Vext
+  digitalWrite(Vext, HIGH);          // Turn off Vext
   digitalWrite(TRANSISTOR_PIN, LOW); // turn of transistor
   pinMode(5, INPUT);
   pinMode(14, INPUT);
@@ -384,27 +381,12 @@ void setup()
   esp_adc_cal_value_t val_type = esp_adc_cal_characterize(ADC_UNIT_2, ADC_ATTEN_DB_6, ADC_WIDTH_BIT_12, DEFAULT_VREF, adc_chars);
   adc2_config_channel_atten(ADC2_CHANNEL_4, ADC_ATTEN_DB_6);
 #endif
-#if defined(__DEBUG) && __DEBUG > 0
-  Serial.printf("ADC Calibration: ");
-  if (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF)
-  {
-    Serial.printf("eFuse Vref\n");
-  }
-  else if (val_type == ESP_ADC_CAL_VAL_EFUSE_TP)
-  {
-    Serial.printf("Two Point\n");
-  }
-  else
-  {
-    Serial.printf("Default[%dmV]\n", DEFAULT_VREF);
-  }
-#else
   if (val_type)
     ; // Suppress warning
-#endif
-  pinMode(VBATT_GPIO, OUTPUT);
-  digitalWrite(VBATT_GPIO, LOW); // ESP32 Lora v2.1 reads on GPIO37 when GPIO21 is low
-  delay(ADC_READ_STABILIZE);     // let GPIO stabilize
+
+  pinMode(Vext, OUTPUT);
+  digitalWrite(Vext, LOW);   // ESP32 Lora v2.1 reads on GPIO37 when GPIO21 is low
+  delay(ADC_READ_STABILIZE); // let GPIO stabilize
 
   // LED
   pinMode(LED_BUILTIN, OUTPUT);
@@ -412,7 +394,6 @@ void setup()
   // METER
   pinMode(TRANSISTOR_PIN, OUTPUT);
   digitalWrite(TRANSISTOR_PIN, HIGH);
-  Serial2.setTimeout(SERIAL_TIMEOUT);
   for (char const *obis : EXPORT_OBJECTS)
   {
     reader.start_monitoring(obis);
