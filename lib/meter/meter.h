@@ -1,5 +1,3 @@
-#include <experimental/string_view>
-
 #include <cstddef>
 #include <cstdint>
 #include <map>
@@ -46,11 +44,11 @@ public:
 
 	/* Start monitoring an object. Returns true if monitoring was just started
 	 * for the specified object, false otherwise */
-	bool start_monitoring(std::experimental::string_view obis);
+	bool start_monitoring(std::string obis);
 
 	/* Stop monitoring an object. Returns true if monitoring was just stopped
 	 * for the specified object, false otherwise */
-	bool stop_monitoring(std::experimental::string_view obis);
+	bool stop_monitoring(std::string obis);
 
 	void start_reading();
 
@@ -86,7 +84,8 @@ private:
 	void read_identification();
 	void switch_baud();
 	void read_line();
-	void handle_object(std::experimental::string_view obis, std::experimental::string_view value);
+	void handle_object(std::string obis, std::string value);
+
 	void verify_checksum();
 
 	void change_status(Status to);

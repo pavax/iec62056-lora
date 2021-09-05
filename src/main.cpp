@@ -50,7 +50,7 @@ U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, /* clock=*/15, /* data=*/4, /*
 #define ADC_READ_STABILIZE 5                     // in ms (delay from GPIO control and ADC connections times)
 #define LO_BATT_SLEEP_TIME 10 * 60 * 1000 * 1000 // How long when low batt to stay in sleep (us)
 #define HELTEC_V2_1 1                            // Set this to switch between GPIO13(V2.0) and GPIO37(V2.1) for VBatt ADC.
-//#define VBATT_GPIO Vext                          // Heltec GPIO to toggle VBatt read connection ... WARNING!!! This also connects VEXT to VCC=3.3v so be careful what is on header.  Also, take care NOT to have ADC read connection in OPEN DRAIN when GPIO goes HIGH
+//#define VBATT_GPIO Vext                        // Heltec GPIO to toggle VBatt read connection ... WARNING!!! This also connects VEXT to VCC=3.3v so be careful what is on header.  Also, take care NOT to have ADC read connection in OPEN DRAIN when GPIO goes HIGH
 //#define __DEBUG 1                              // DEBUG Serial output
 esp_adc_cal_characteristics_t *adc_chars;
 RunningAverage batteryValues(VBATT_SMOOTH);
@@ -73,12 +73,6 @@ int retryTimeSeconds(RetryReason retryReason)
 
   lastRetryReason = retryReason;
   retrySleepTime *= BACKOFF_MULTIPLIER;
-  if (retrySleepTime > DEEP_SLEEP_TIME)
-  {
-    retrySleepTime = DEEP_SLEEP_TIME;
-    Serial.println("Enough retry -> Let's restart");
-    ESP.restart();
-  }
   return retrySleepTime;
 }
 
@@ -215,6 +209,13 @@ void batteryUpdate()
 
 void goDeepSleep(unsigned deepSleepTime)
 {
+  if (deepSleepTime > DEEP_SLEEP_TIME)
+  {
+    resetRetryTime();
+    Serial.println("Enough retry -> Let's restart");
+    ESP.restart();
+  }
+
   Serial.printf("Go DeepSleep for %d seconds\n", deepSleepTime);
   printRuntime();
   u8g2.sleepOn();

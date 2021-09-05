@@ -1,6 +1,5 @@
 #include <cinttypes>
 #include <cstdint>
-#include <experimental/string_view>
 #include "config.h"
 #include "meter.h"
 
@@ -36,7 +35,7 @@ static BaudSwitchParameters baud_char_to_params(char identification)
     return {false, 0};                                     /* no acknowledgement, don't switch baud */
 }
 
-static bool is_valid_object_value(std::experimental::string_view value)
+static bool is_valid_object_value(std::string value)
 {
   for (size_t i = 0; i < value.size(); ++i)
   {
@@ -65,8 +64,8 @@ enum class MeterReader::Step : uint8_t
 
 void MeterReader::send_request()
 {
-  serial_.setTimeout(SERIAL_TIMEOUT * 2); // double the normal timeout at the bginning
-  serial_.begin(INITIAL_BAUD_RATE, SERIAL_7E1, rx_, tx_, IRINVERTED);
+  Serial.println("Step -> send_request");
+  Serial.print("/?!\r\n");
   serial_.write("/?!\r\n");
   serial_.flush();
 
@@ -75,11 +74,12 @@ void MeterReader::send_request()
 
 void MeterReader::read_identification()
 {
-  //serial_.begin(INITIAL_BAUD_RATE, SERIAL_7E1, rx_, DUMMY_PIN, IRINVERTED); // not needed
+  Serial.println("Step -> read_identification");
+  serial_.setTimeout(SERIAL_TIMEOUT * 2); // double the normal timeout at the bginning
   char identification[MAX_IDENTIFICATION_LENGTH];
   size_t len = serial_.readBytesUntil('\n', identification, MAX_IDENTIFICATION_LENGTH);
-  std::experimental::string_view id_view(identification, len);
-  lastReadChars_ = std::string(identification);
+  std::string idView = std::string(identification);
+  lastReadChars_ = idView;
   Serial.printf("identification=%s\n", identification);
 
   if (len < 6)
@@ -88,9 +88,9 @@ void MeterReader::read_identification()
     return change_status(Status::IdentificationError);
   }
 
-  if (identifierChars_ != NULL && id_view.find(identifierChars_) == std::experimental::string_view::npos)
+  if (identifierChars_ != NULL && idView.find(identifierChars_) == std::string::npos)
   {
-    Serial.printf("identification not machted: %s \n", identification);
+    Serial.printf("identification not matched: %s \n", identification);
     return change_status(Status::IdentificationError_Id_Mismatch);
   }
 
@@ -104,8 +104,8 @@ void MeterReader::read_identification()
 #endif
 
   step_ = Step::IdentificationRead;
-  serial_.setTimeout(SERIAL_TIMEOUT);
-  delay(1000); // not sure if needed anymore....
+  serial_.setTimeout(SERIAL_TIMEOUT); // switch back to the normal timeout
+  delay(1000);                        // not sure if needed anymore....
 }
 
 void MeterReader::switch_baud()
@@ -166,16 +166,17 @@ void MeterReader::read_line()
   }
   else
   {
-    std::experimental::string_view line_view(line, len);
-    if (line_view[0] == STX) /* The first data line starts with an STX, remove it */
-      line_view.remove_prefix(1);
+    std::string lineView = std::string(line);
 
-    auto lparen = line_view.find_first_of('(');
-    auto rparen = line_view.find_last_of(')');
-    if (lparen != std::experimental::string_view::npos && rparen != std::experimental::string_view::npos)
+    if (lineView[0] == STX) /* The first data line starts with an STX, remove it */
+      lineView.erase(0, 1);
+
+    auto openParen = lineView.find_first_of('(');
+    auto closeParen = lineView.find_last_of(')');
+    if (openParen != std::string::npos && closeParen != std::string::npos)
     {
-      auto obis = line_view.substr(0, lparen);
-      auto value = line_view.substr(lparen + 1, rparen - (lparen + 1));
+      auto obis = lineView.substr(0, openParen);
+      auto value = lineView.substr(openParen + 1, closeParen - (openParen + 1));
       handle_object(obis, value);
     }
     else
@@ -185,30 +186,24 @@ void MeterReader::read_line()
   }
 }
 
-static void postprocess_value(std::experimental::string_view &value)
+static void postprocess_value(std::string &value)
 {
 #ifdef STRIP_UNIT
   size_t unit_sep_pos = value.find_last_of(UNIT_SEPARATOR);
-  if (unit_sep_pos != std::experimental::string_view::npos)
-    value.remove_suffix(value.size() - unit_sep_pos);
+  if (unit_sep_pos != std::string::npos)
+    value.erase(unit_sep_pos, std::string::npos);
 #endif
 }
 
-void MeterReader::handle_object(std::experimental::string_view obis, std::experimental::string_view value)
+void MeterReader::handle_object(std::string obis, std::string value)
 {
-  auto entry = values_.find(std::string(obis)); /* TODO avoid copy? */
+  auto entry = values_.find(obis);
   if (entry != values_.end())
   {
     postprocess_value(value);
     if (is_valid_object_value(value))
     {
-      std::string obisStr = std::string(obis);
-      std::string valueStr = std::string(value);
-      //Serial.printf("obis: %s \t value: %s \n", obisStr.c_str(), valueStr.c_str());
-      if (is_valid_object_value(value))
-      {
-        entry->second = valueStr;
-      }
+      entry->second = value;
     }
   }
 }
@@ -247,23 +242,23 @@ void MeterReader::change_status(Status to)
   status_ = to;
 }
 
-bool MeterReader::start_monitoring(std::experimental::string_view obis)
+bool MeterReader::start_monitoring(std::string obis)
 {
   /* Don't allow adding a new monitored object in the middle of a readout */
   if (status_ == Status::Busy)
     return false;
 
-  values_.emplace(std::string(obis), "");
+  values_.emplace(obis, "");
   return true;
 }
 
-bool MeterReader::stop_monitoring(std::experimental::string_view obis)
+bool MeterReader::stop_monitoring(std::string obis)
 {
   /* Don't allow removing a monitored object in the middle of a readout */
   if (status_ == Status::Busy)
     return false;
 
-  return values_.erase(std::string(obis)) == 1;
+  return values_.erase(obis) == 1;
 }
 
 void MeterReader::start_reading()
@@ -275,6 +270,20 @@ void MeterReader::start_reading()
   status_ = Status::Busy;
   step_ = Step::Started;
   startTime_ = millis();
+
+  serial_.setTimeout(SERIAL_TIMEOUT);
+  serial_.begin(INITIAL_BAUD_RATE, SERIAL_7E1, rx_, tx_, IRINVERTED);
+  Serial.print("Clear serial buffer");
+  while (serial_.read() >= 0)
+  {
+    Serial.print(".");
+    if (startTime_ + (2 * 1000) < millis())
+    {
+      return change_status(Status::TimeoutError);
+    }
+    delay(20);
+  }
+  Serial.println("");
 }
 
 void MeterReader::loop()
