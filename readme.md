@@ -1,12 +1,21 @@
-# About this project
+# iec62056-lora
 - Periodicaly read power and energy consumption from a electricity meter that support the 62056-21 protocol. 
 - Use LoRa/TTN to send the data to a (public or private) gateway 
 - The gateway POST's the data to a Home-Assistant WebHook where the data is applied to several [template sensors](https://www.home-assistant.io/integrations/template/)
 
 
+## State 
+
+- Project is still work in progress
+
+- My project is currently not power by battery (but should work). Unfortunatelly the Hardware consumes to much current. Might need to buy a more effiecient Lora Dev Board
+
+
 # My Hardware
 - [Heltec Lora Esp32 Dev Board](https://www.bastelgarage.ch/heltec-automation/wifi-lora-32-v2-sx1276-868mhz-mit-oled)
 - [Optical reading head](https://www.ebay.de/itm/313460034498)
+- [Lora Antenna + 2m extension cord SMA-MALE](https://shopofthings.ch/shop/prototyping/netzwerk/868mhz-lorawan-lora-atenne-mit-3m-verlaengerungskabel-5dbi-sma-male-915mhz-gsm/)
+- [PEX/IPX/U.FL to SMA-FEMALE](https://shopofthings.ch/shop/prototyping/kabel/antennenverlaengerung-ipex-ipx-u-fl-auf-sma-female-rg178-25cm/)
 - [Elster AS3000](https://wiki.volkszaehler.org/hardware/channels/meters/power/edl-ehz/elster_as3000)
 
 
@@ -17,7 +26,7 @@
 
 ## Acknowledgements 
 - https://github.com/mwdmwd/iec62056-mqtt
-- https://wiki.volkszaehler.org/hardware/channels/meters/power/edl-ehz/elster_as1440#quellen
+- https://wiki.volkszaehler.org/hardware/channels/meters/power/edl-ehz/elster_as1440
 
 
 # Home-Assitant Template Sensors
@@ -38,11 +47,11 @@
       state_class: measurement
       state: >-
         {% set payloadHex = trigger.json.data.payload_hex | default(none) %}
-        {% if payloadHex == none or payloadHex == '00' %}
-            {{ none }}
+        {% set value = payloadHex[0:4] %}
+        {% if value == '0000' %}
+          {{ none }}
         {% else %}
-          {% set power = payloadHex[0:4] %}
-          {{ power | int(power,16) }}
+          {{ value | int(value,16) }}
         {% endif %}
 
     - name: "Smart Meter Kwh"
@@ -53,11 +62,11 @@
       device_class: energy
       state: >-
         {% set payloadHex = trigger.json.data.payload_hex | default(none) %}
-        {% if payloadHex == none or payloadHex == '00' %}
-            {{ none }}
+        {% set value = payloadHex[4:12] %}
+        {% if value == '00000000' %}
+          {{ none }}
         {% else %}
-          {% set value = payloadHex[5:12] %}
-          {{ ( value | int(value,16) /100 ) | float }}
+          {{ value | int(value,16)/100|float }}
         {% endif %}
 
     - name: "Smart Meter Battery"
@@ -67,10 +76,10 @@
       device_class: battery
       state: >-
         {% set payloadHex = trigger.json.data.payload_hex | default(none) %}
-        {% if payloadHex == none or payloadHex == '00' %}
-            {{ none }}
+        {% set value = payloadHex[12:14] %}
+        {% if value == '00' %}
+          {{ none }}
         {% else %}
-          {% set value = payloadHex[12:14] %}
           {{ value | int(value,16) }}
         {% endif %}
 
@@ -80,29 +89,11 @@
       unit_of_measurement: "times"
       state: >-
         {% set payloadHex = trigger.json.data.payload_hex | default(none) %}
-        {% if payloadHex == none or payloadHex == '00' %}
-            {{ none }}
+        {% set value = payloadHex[14:16] %}
+        {% if value == '00' %}
+          {{ none }}
         {% else %}
-          {% set value = payloadHex[14:16] %}
           {{ value | int(value,16) }}
         {% endif %}
-
-    - name: "Smart Meter RSSI"
-      unique_id: smart_meter_rssi
-      icon: mdi:wifi
-      unit_of_measurement: "dBm"
-      device_class: signal_strength
-      state_class: measurement
-      state: >-
-        {{ trigger.json.data.LrrRSSI | round(0) }}
-
-    - name: "Smart Meter  SNR"
-      unique_id: smart_meter_snr
-      icon: mdi:signal-distance-variant
-      unit_of_measurement: "dB"
-      device_class: signal_strength
-      state_class: measurement
-      state: >-
-        {{ trigger.json.data.LrrSNR | round(0) }}
 
 ```

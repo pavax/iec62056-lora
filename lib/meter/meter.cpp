@@ -186,15 +186,6 @@ void MeterReader::read_line()
   }
 }
 
-static void postprocess_value(std::string &value)
-{
-#ifdef STRIP_UNIT
-  size_t unit_sep_pos = value.find_last_of(UNIT_SEPARATOR);
-  if (unit_sep_pos != std::string::npos)
-    value.erase(unit_sep_pos, std::string::npos);
-#endif
-}
-
 void MeterReader::handle_object(std::string obis, std::string value)
 {
   auto entry = values_.find(obis);
@@ -314,4 +305,13 @@ void MeterReader::loop()
     verify_checksum();
     break;
   }
+}
+
+static void postprocess_value(std::string &value)
+{
+#ifdef STRIP_UNIT
+  size_t unit_sep_pos = value.find_last_of(UNIT_SEPARATOR);
+  if (unit_sep_pos != std::string::npos)
+    value.erase(unit_sep_pos, std::string::npos);
+#endif
 }
