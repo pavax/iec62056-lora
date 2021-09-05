@@ -65,6 +65,15 @@ char const *const EXPORT_OBJECTS[] = {
 
 static MeterReader reader(Serial2, 12, 13, "ELS");
 
+
+void printRuntime()
+{
+  long seconds = millis() / 1000;
+  Serial.print("Runtime: ");
+  Serial.print(seconds);
+  Serial.println(" seconds");
+}
+
 int retryTimeSeconds(RetryReason retryReason)
 {
   Serial.printf("Last Retry-Reason: %d - Current Retry-Reason: %d\n", lastRetryReason, retryReason);
@@ -82,12 +91,38 @@ void resetRetryTime()
   retrySleepTime = INITAL_RETRY_SLEEP_TIME;
 }
 
-void printRuntime()
+void goDeepSleep(unsigned int deepSleepTime)
 {
-  long seconds = millis() / 1000;
-  Serial.print("Runtime: ");
-  Serial.print(seconds);
-  Serial.println(" seconds");
+  if (deepSleepTime > DEEP_SLEEP_TIME)
+  {
+    resetRetryTime();
+    Serial.println("Enough retry -> Let's restart");
+    ESP.restart();
+  }
+
+  Serial.printf("Go DeepSleep for %d seconds\n", deepSleepTime);
+  printRuntime();
+  u8g2.sleepOn();
+  ttn.stop();
+  Serial.flush();
+  Serial2.flush();
+  Serial.end();
+  Serial2.end();
+  digitalWrite(Vext, HIGH);          // Turn off Vext
+  digitalWrite(TRANSISTOR_PIN, LOW); // turn of transistor
+  pinMode(5, INPUT);
+  pinMode(14, INPUT);
+  pinMode(15, INPUT);
+  pinMode(16, INPUT);
+  //pinMode(17, INPUT);
+  pinMode(18, INPUT);
+  pinMode(19, INPUT);
+  pinMode(26, INPUT);
+  pinMode(27, INPUT);
+  gpio_num_t wakeup_gpio = (gpio_num_t)KEY_BUILTIN;
+  esp_sleep_enable_ext1_wakeup(1ULL << wakeup_gpio, ESP_EXT1_WAKEUP_ALL_LOW);
+  esp_sleep_enable_timer_wakeup(deepSleepTime * 1000000);
+  esp_deep_sleep_start();
 }
 
 void blink(int times)
@@ -324,40 +359,6 @@ void sendData()
   Serial.println("SENT!");
   strncpy(sendingStatus, "SENT", sizeof(sendingStatus) - 1);
   displayUpdate();
-}
-
-void goDeepSleep(unsigned int deepSleepTime)
-{
-  if (deepSleepTime > DEEP_SLEEP_TIME)
-  {
-    resetRetryTime();
-    Serial.println("Enough retry -> Let's restart");
-    ESP.restart();
-  }
-
-  Serial.printf("Go DeepSleep for %d seconds\n", deepSleepTime);
-  printRuntime();
-  u8g2.sleepOn();
-  ttn.stop();
-  Serial.flush();
-  Serial2.flush();
-  Serial.end();
-  Serial2.end();
-  digitalWrite(Vext, HIGH);          // Turn off Vext
-  digitalWrite(TRANSISTOR_PIN, LOW); // turn of transistor
-  pinMode(5, INPUT);
-  pinMode(14, INPUT);
-  pinMode(15, INPUT);
-  pinMode(16, INPUT);
-  //pinMode(17, INPUT);
-  pinMode(18, INPUT);
-  pinMode(19, INPUT);
-  pinMode(26, INPUT);
-  pinMode(27, INPUT);
-  gpio_num_t wakeup_gpio = (gpio_num_t)KEY_BUILTIN;
-  esp_sleep_enable_ext1_wakeup(1ULL << wakeup_gpio, ESP_EXT1_WAKEUP_ALL_LOW);
-  esp_sleep_enable_timer_wakeup(deepSleepTime * 1000000);
-  esp_deep_sleep_start();
 }
 
 void setup()

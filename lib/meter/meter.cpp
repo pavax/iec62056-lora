@@ -45,6 +45,15 @@ static bool is_valid_object_value(std::string value)
   return true;
 }
 
+static void postprocess_value(std::string &value)
+{
+#ifdef STRIP_UNIT
+  size_t unit_sep_pos = value.find_last_of(UNIT_SEPARATOR);
+  if (unit_sep_pos != std::string::npos)
+    value.erase(unit_sep_pos, std::string::npos);
+#endif
+}
+
 enum class MeterReader::Step : uint8_t
 {
   Ready,
@@ -305,13 +314,4 @@ void MeterReader::loop()
     verify_checksum();
     break;
   }
-}
-
-static void postprocess_value(std::string &value)
-{
-#ifdef STRIP_UNIT
-  size_t unit_sep_pos = value.find_last_of(UNIT_SEPARATOR);
-  if (unit_sep_pos != std::string::npos)
-    value.erase(unit_sep_pos, std::string::npos);
-#endif
 }
