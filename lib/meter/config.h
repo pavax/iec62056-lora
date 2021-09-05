@@ -5,7 +5,7 @@
 #define STRIP_UNIT
 
 /* Set to an unused pin (needed to switch between RX and TX only) */
-#define DUMMY_PIN 23
+#define DUMMY_PIN 23 // CHANGME: set this pin to a unused pin
 
 /* Uncomment to verify the checksum */
 #define SKIP_CHECKSUM_CHECK

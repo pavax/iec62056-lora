@@ -9,12 +9,11 @@ size_t const MAX_OBIS_CODE_LENGTH = 16;
 size_t const MAX_IDENTIFICATION_LENGTH = 5 + 16 + 1; /* /AAAbi...i\r */
 size_t const MAX_VALUE_LENGTH = 32 + 1 + 16 + 1;	 /* value: 32, *, unit: 16 */
 size_t const MAX_LINE_LENGTH = 78;
+uint32_t const INITIAL_BAUD_RATE = 300;
 
 uint32_t const SERIAL_TIMEOUT = 2000; // How long to wait for the meter to send responses to our requests. [ms]
 
-uint32_t const INITIAL_BAUD_RATE = 300;
-
-unsigned long const MAX_METER_READ_TIME = 30;
+unsigned long const MAX_METER_READ_TIME = 30; // How long it should take to read all the data/lines [seconds]
 
 class MeterReader
 {

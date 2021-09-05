@@ -20,7 +20,7 @@ enum RetryReason
 RTC_DATA_ATTR RetryReason lastRetryReason;
 RTC_DATA_ATTR float retrySleepTime;             // Every time there's an error, this delay is doubled, up to a maximum. [seconds]
 const unsigned int INITAL_RETRY_SLEEP_TIME = 1; // start retry time [seconds]
-const float BACKOFF_MULTIPLIER = 1.5;           // 1   2   3   5   7   11    17    25    38    57    86    129   194    291     436
+const float BACKOFF_MULTIPLIER = 1.5;           // 1   2   3   5   7   11    17    25    38    57    86    129   194    291     437
 const unsigned DEEP_SLEEP_TIME = 600;           // normal deep sleep time [seconds]
 
 char sendingStatus[10];
@@ -42,7 +42,7 @@ U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, /* clock=*/15, /* data=*/4, /*
  * BATTERY 
  **********/
 #define MAXBATT 4200 // The default Lipo is 4200mv when the battery is fully charged.
-//#define LIGHT_SLEEP_VOLTAGE 3750                 // Point where start light sleep
+//#define LIGHT_SLEEP_VOLTAGE 3750               // Point where start light sleep [not implemented yet]
 #define MINBATT 3200                             // The default Lipo is 3200mv when the battery is empty...this WILL be low on the 3.3v rail specs!!!
 #define VOLTAGE_DIVIDER 3.20                     // Lora has 220k/100k voltage divider so need to reverse that reduction via (220k+100k)/100k on vbat GPIO37 or ADC1_1 (early revs were GPIO13 or ADC2_4 but do NOT use with WiFi.begin())
 #define DEFAULT_VREF 1100                        // Default VREF use if no e-fuse calibration
@@ -62,9 +62,8 @@ char const *const EXPORT_OBJECTS[] = {
     "1.7.0", // momentane leistung
     "1.8.0"  // total kwh
 };
-
-static MeterReader reader(Serial2, 12, 13, "ELS");
-
+static MeterReader reader(Serial2, 12, 13, "ELS"); // CHANGEME: Adapt RX and TX Pin
+//static MeterReader reader(Serial2, 12, 13, NULL);   // CHANGEME: Use this if you don't know the Identifier of your meter (for example: /ELS5\@V10.04)
 
 void printRuntime()
 {

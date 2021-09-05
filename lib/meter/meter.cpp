@@ -71,6 +71,35 @@ enum class MeterReader::Step : uint8_t
                                                               => status = ProtocolError => status = Ready
 */
 
+void MeterReader::start_reading()
+{
+  /* Don't allow starting a read when one is already in progress */
+  if (status_ == Status::Busy)
+    return;
+
+  status_ = Status::Busy;
+  step_ = Step::Started;
+  startTime_ = millis();
+
+  // prepare serial
+  serial_.setTimeout(SERIAL_TIMEOUT);
+  serial_.begin(INITIAL_BAUD_RATE, SERIAL_7E1, rx_, tx_, IRINVERTED);
+
+  // Hack: Sometimes it seems as there is already some data in the rx buffer thus let's clear it.
+  // THE Elster AS 3000 has sometimes a weird behaviour where the data is being send in an endless loop.
+  // The only way to stop the loop is by manually pressing the meter's menu button many times to navigate through all the obis values till you reach END (ETX).
+  // Thus I also added a timeout check here
+  Serial.print("Clear serial buffer");
+  while (serial_.read() >= 0)
+  {
+    Serial.print(".");
+    if (startTime_ + (2 * 1000) < millis())
+      return change_status(Status::TimeoutError);
+    delay(20);
+  }
+  Serial.println("");
+}
+
 void MeterReader::send_request()
 {
   Serial.println("Step -> send_request");
@@ -84,7 +113,7 @@ void MeterReader::send_request()
 void MeterReader::read_identification()
 {
   Serial.println("Step -> read_identification");
-  serial_.setTimeout(SERIAL_TIMEOUT * 2); // double the normal timeout at the bginning
+  serial_.setTimeout(SERIAL_TIMEOUT * 2); // double the normal timeout at the beginning
   char identification[MAX_IDENTIFICATION_LENGTH];
   size_t len = serial_.readBytesUntil('\n', identification, MAX_IDENTIFICATION_LENGTH);
   std::string idView = std::string(identification);
@@ -124,7 +153,6 @@ void MeterReader::switch_baud()
 
   if (params.send_acknowledgement)
   {
-    //serial_.begin(INITIAL_BAUD_RATE, SERIAL_7E1, DUMMY_PIN, tx_, IRINVERTED);  // not needed
     serial_.printf(ACK "0%c0\r\n", baud_char_);
     serial_.flush();
   }
@@ -259,31 +287,6 @@ bool MeterReader::stop_monitoring(std::string obis)
     return false;
 
   return values_.erase(obis) == 1;
-}
-
-void MeterReader::start_reading()
-{
-  /* Don't allow starting a read when one is already in progress */
-  if (status_ == Status::Busy)
-    return;
-
-  status_ = Status::Busy;
-  step_ = Step::Started;
-  startTime_ = millis();
-
-  serial_.setTimeout(SERIAL_TIMEOUT);
-  serial_.begin(INITIAL_BAUD_RATE, SERIAL_7E1, rx_, tx_, IRINVERTED);
-  Serial.print("Clear serial buffer");
-  while (serial_.read() >= 0)
-  {
-    Serial.print(".");
-    if (startTime_ + (2 * 1000) < millis())
-    {
-      return change_status(Status::TimeoutError);
-    }
-    delay(20);
-  }
-  Serial.println("");
 }
 
 void MeterReader::loop()
