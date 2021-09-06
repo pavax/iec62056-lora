@@ -58,6 +58,16 @@ RunningAverage batteryValues(VBATT_SMOOTH);
 /**********
  * OPTICAL METER
  **********/
+const std::map<MeterReader::Status, std::string> METER_STATUS_MAP = {
+    {MeterReader::Status::Ready, "Ready"},
+    {MeterReader::Status::Busy, "Busy"},
+    {MeterReader::Status::Ok, "Ok"},
+    {MeterReader::Status::TimeoutError, "Timeout"},
+    {MeterReader::Status::IdentificationError, "Err-Idn-1"},
+    {MeterReader::Status::IdentificationError_Id_Mismatch, "Err-Idn-2"},
+    {MeterReader::Status::ProtocolError, "Err-Prot"},
+    {MeterReader::Status::ChecksumError, "Timeout"},
+    {MeterReader::Status::TimeoutError, "Err-Chk"}};
 char const *const EXPORT_OBJECTS[] = {
     "1.7.0", // momentane leistung
     "1.8.0"  // total kwh
@@ -160,27 +170,10 @@ uint16_t readBatteryVoltageSample()
 std::string meterStatus()
 {
   MeterReader::Status status = reader.status();
-  switch (status)
-  {
-  case MeterReader::Status::Ready:
-    return "Ready";
-  case MeterReader::Status::Busy:
-    return "Busy";
-  case MeterReader::Status::Ok:
-    return "Ok";
-  case MeterReader::Status::TimeoutError:
-    return "Timeout";
-  case MeterReader::Status::IdentificationError:
-    return "Err-Idn-1";
-  case MeterReader::Status::IdentificationError_Id_Mismatch:
-    return "Err-Idn-2";
-  case MeterReader::Status::ProtocolError:
-    return "Err-Pro";
-  case MeterReader::Status::ChecksumError:
-    return "Err-Chk";
-  default:
-    return "Uknwn";
-  }
+  auto it = METER_STATUS_MAP.find(status);
+  if (it == METER_STATUS_MAP.end())
+    return "Unknw";
+  return it->second;
 }
 
 void displayUpdate()
@@ -204,13 +197,13 @@ void displayUpdate()
 
   u8g2.setCursor(3, 46);
   u8g2.print("State:");
-  u8g2.printf("%7s", meterStatus().c_str());
+  u8g2.printf("%9s", meterStatus().c_str());
 
-  std::string lastChars = reader.lastReadChars();
-  if (lastChars.size() > 0)
+  std::string lastReadChars = reader.lastReadChars();
+  if (lastReadChars.size() > 0)
   {
     u8g2.setCursor(3, 58);
-    u8g2.printf("%s", lastChars.c_str());
+    u8g2.printf("%s", lastReadChars.c_str());
   }
 
   if (strlen(sendingStatus) > 0)
@@ -218,6 +211,12 @@ void displayUpdate()
     u8g2.setCursor(3, 58);
     u8g2.print("TTN:");
     u8g2.printf("%11s", sendingStatus);
+  }
+  else
+  {
+    u8g2.setCursor(3, 58);
+    u8g2.print("Count:");
+    u8g2.printf("%9d", uptimeCount);
   }
 
   u8g2.sendBuffer();
