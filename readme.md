@@ -7,8 +7,8 @@
 ## State 
 - Project is still work in progress (feel free to contribute)
 - My project is currently not power by battery (but should work). Unfortunatelly the Hardware consumes to much current. Might need to buy a more effiecient Lora Board
-- I ran a long dozen of times up and down the staircase (third floor) down into the basement for this project - if you want to avoid that, free to buy me a coffee. 
-  
+- I ran a long dozen of times up and down the staircase (third floor) down to the basement for this project - if you want to avoid that, free to buy me a coffee 
+
   [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/pavax)
 
 
