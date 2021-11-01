@@ -13,14 +13,14 @@
 //  1200000  ->  20 min
 //  1800000  ->  30 min
 //  3600000  ->  60 min
-uint32_t sleepTime = 900000; // ADJUSTME
+uint32_t sleepTime = 900000;
 
 /* BATTERY para */
 #define MAXBATT 3300
 #define MINBATT 2700
 
 /* METER para */
-static MeterReader reader(Serial1, "ELS"); // CHANGEME
+static MeterReader reader(Serial1, METER_IDENTIFIER); 
 double power = 0;
 double totalkWh = 0;
 unsigned int uptimeCount = 0;
@@ -34,12 +34,12 @@ float retrySleepTime = INITIAL_RETRY_SLEEP_TIME;        // Every time there's an
 const float BACKOFF_MULTIPLIER = 1.5;                   // 5    7.5   11.25   16.8    23.3    37.9    56.9    85.42     128
 
 /* LOGGER para */
-#define DEFAULT_LOG_LEVEL Info // ADJUSTME
+#define DEFAULT_LOG_LEVEL Info // DEBUG: set the Debug for more logging statements
 
 /*LoraWan channelsmask, default channels 0-7*/
 uint16_t userChannelsMask[6] = { 0x00FF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 };
 
-/* ADJUSTME: LoraWan region, select in arduino IDE tools*/
+/* LoraWan region, select in arduino IDE tools*/
 LoRaMacRegion_t loraWanRegion = ACTIVE_REGION;
 
 /*LoraWan Class, Class A and Class C are supported*/
@@ -174,9 +174,9 @@ void updateMeterData() {
     const std::string key = it->first;
     const char *value = it->second.c_str();
     logger::debug("Result: %s \t %s", key.c_str(), value);
-    if (key.compare("1.7.0") == 0) {
+    if (key.compare(OBIS_VALUE_POWER) == 0) {
       power = atof(value) * 1000;
-    } else if (key.compare("1.8.0") == 0) {
+    } else if (key.compare(OBIS_VALUE_TOTAL_ENERGY) == 0) {
       totalkWh = atof(value);
     }
   }
@@ -219,8 +219,8 @@ void onWakeUp() {
   delay(10);
   if (digitalRead(INT_GPIO) == 0) {
     Serial.println("Woke up by GPIO");
-    //resetRetryTime();
-    deviceState = DEVICE_STATE_SEND;
+    // resetRetryTime();
+    // deviceState = DEVICE_STATE_SEND; // DEBUGME: After the button is pressed direclty read data from the smart-meter
   }
 }
 
@@ -243,15 +243,15 @@ void setup() {
   logger::set_level(logger::DEFAULT_LOG_LEVEL);
 
   Serial1.begin(INITIAL_BAUD_RATE, PARITY_SETTING);
-  Serial1.setTimeout(10); // TODO is this needed herer
+  Serial1.setTimeout(10);
 
   pinMode(Vext, OUTPUT);
   pinMode(INT_GPIO, INPUT);
 
   attachInterrupt(INT_GPIO, onWakeUp, FALLING);
 
-  reader.start_monitoring("1.7.0");
-  reader.start_monitoring("1.8.0");
+  reader.start_monitoring(OBIS_VALUE_POWER);
+  reader.start_monitoring(OBIS_VALUE_TOTAL_ENERGY);
 
 #if(AT_SUPPORT)
   enableAt();

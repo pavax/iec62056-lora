@@ -9,14 +9,6 @@ size_t const MAX_IDENTIFICATION_LENGTH = 5 + 16 + 1; /* /AAAbi...i\r */
 size_t const MAX_VALUE_LENGTH = 32 + 1 + 16 + 1;   /* value: 32, *, unit: 16 */
 size_t const MAX_LINE_LENGTH = 78;
 
-unsigned int const INITIAL_BAUD_RATE = 300;
-
-unsigned int const SERIAL_IDENTIFICATION_READING_TIMEOUT = 2000; // How long to wait for the meter to send the id response for our request. [ms]
-
-unsigned int const SERIAL_READING_TIMEOUT = 500; // How long to wait for the meter to send normal responses [ms]
-
-unsigned long const MAX_METER_READ_TIME = 60; // How long it should take to read all the data/lines [seconds]
-
 /* An additional layer of protection against bit flips: the values of all exported
    objects are checked, and if they contain any characters other than these, the
    the newly-read value is discarded. This might not be needed if your optical reading
