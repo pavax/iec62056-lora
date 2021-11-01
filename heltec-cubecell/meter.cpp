@@ -1,4 +1,3 @@
-#include "config.h"
 #include "meter.h"
 #include "logger.h"
 
@@ -116,7 +115,7 @@ void MeterReader::read_identification() {
 #endif
 
   step_ = IdentificationRead;
-  delay(500); // TODO is this needed?
+  delay(BAUDRATE_CHANGE_DELAY);
 }
 
 void MeterReader::switch_baud() {

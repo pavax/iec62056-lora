@@ -3,6 +3,7 @@
 #include "math.h"
 #include "meter.h"
 #include "logger.h"
+#include "credentials.h"
 
 #define INT_GPIO USER_KEY
 
@@ -12,17 +13,7 @@
 //  1200000  ->  20 min
 //  1800000  ->  30 min
 //  3600000  ->  60 min
-uint32_t sleepTime = 900000;
-
-/* OTAA para */
-uint8_t devEui[] = { 0x70, 0xB3, 0x74, 0x42, 0x7F, 0x55, 0x74, 0x3F }; //70B374427F55743F
-uint8_t appEui[] = { 0x44, 0x4b, 0x33, 0x3e, 0xe0, 0xce, 0x65, 0x70 }; //444b333ee0ce6570
-uint8_t appKey[] = { 0xC8, 0x39, 0x56, 0xEB, 0x63, 0x97, 0x2C, 0x63, 0x99, 0x43, 0x87, 0x4E, 0xEA, 0x56, 0x7E, 0x4D }; //C83956EB63972C639943874EEA567E4D
-
-//uint8_t devEui[] = { 0x70, 0xB3, 0x74, 0x42, 0x7F, 0x42, 0x7F, 0x3F }; //70B374427F427F3F
-//uint8_t appEui[] = { 0x44, 0x4b, 0x33, 0x3e, 0xe0, 0xce, 0x65, 0x77 }; // 444b333ee0ce6577
-//uint8_t appKey[] = { 0xC8, 0x39, 0x56, 0xEB, 0x63, 0x97, 0x2C, 0x63, 0x99, 0x43, 0x87, 0x4E, 0xEA, 0x56, 0x7E, 0x4D };  // C83956EB63972C639943874EEA567E4D
-
+uint32_t sleepTime = 900000; // ADJUSTME
 
 /* BATTERY para */
 #define MAXBATT 3300
@@ -36,23 +27,19 @@ unsigned int uptimeCount = 0;
 uint8_t batteryPct = 0;
 uint16_t batteryVoltage = 0;
 
+
 /* RETRY para */
 const unsigned int INITIAL_RETRY_SLEEP_TIME = 5000;     // start retry time [ms]
 float retrySleepTime = INITIAL_RETRY_SLEEP_TIME;        // Every time there's an error, this sleep time is multiplied by the multiplier faktor, up to the maximum, the normal sleepTime. [seconds]
 const float BACKOFF_MULTIPLIER = 1.5;                   // 5    7.5   11.25   16.8    23.3    37.9    56.9    85.42     128
 
 /* LOGGER para */
-#define DEFAULT_LOG_LEVEL Info
-
-/* ABP para */
-uint8_t nwkSKey[] = {};
-uint8_t appSKey[] = {};
-uint32_t devAddr =  0;
+#define DEFAULT_LOG_LEVEL Info // ADJUSTME
 
 /*LoraWan channelsmask, default channels 0-7*/
 uint16_t userChannelsMask[6] = { 0x00FF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 };
 
-/*LoraWan region, select in arduino IDE tools*/
+/* ADJUSTME: LoraWan region, select in arduino IDE tools*/
 LoRaMacRegion_t loraWanRegion = ACTIVE_REGION;
 
 /*LoraWan Class, Class A and Class C are supported*/
@@ -237,7 +224,7 @@ void onWakeUp() {
   }
 }
 
-int retryTimeSeconds() {
+int determineRetryTime() {
   retrySleepTime *= BACKOFF_MULTIPLIER;
   if (retrySleepTime > sleepTime) {
     retrySleepTime = sleepTime;
@@ -255,7 +242,7 @@ void setup() {
   logger::set_serial(Serial);
   logger::set_level(logger::DEFAULT_LOG_LEVEL);
 
-  Serial1.begin(INITIAL_BAUD_RATE, SERIAL_7E1);
+  Serial1.begin(INITIAL_BAUD_RATE, PARITY_SETTING);
   Serial1.setTimeout(10); // TODO is this needed herer
 
   pinMode(Vext, OUTPUT);
@@ -309,7 +296,7 @@ void loop() {
           logger::debug("retrySleepTime:  %d [s]", (int)(retrySleepTime / 1000.0 ));
           logger::debug("appTxDutyCycle:  %d [s]", (int)(appTxDutyCycle / 1000.0));
           digitalWrite(Vext, LOW);
-          delay(50);
+          delay(50); // TODO is this needed?
           reader.start_reading();
         } else if (readerState == Ok) {
           logger::debug("Reader OK");
@@ -323,7 +310,7 @@ void loop() {
         } else if (readerState != Busy) {
           logger::err("Reader Error with Status: %d", readerState);
           reader.acknowledge();
-          appTxDutyCycle = retryTimeSeconds();
+          appTxDutyCycle = determineRetryTime();
           deviceState = DEVICE_STATE_CYCLE;
         }
         break;
