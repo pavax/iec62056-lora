@@ -6,7 +6,7 @@
 
 ## State 
 - Project is still work in progress (feel free to contribute)
-- At the beginning I was experimenting arround with the Heltec lora esp32 microcontroller. That microcontroller is fully Arduino / platformio compatible and work fine as long as you don't wanna power it by a battery as it consumed a lot of energy even in deep-sleep. Thus I switched to the Heltec Cubecell AB02 series that is specialized for battery operated use-cases.
+- In the beginning I was experimenting around with the Heltec lora esp32 micro-controller. That micro-controller is fully Arduino / Platformio compatible and work fine as long as you don't wanna power it by a battery as it consumed a lot of energy even in deep-sleep. Thus I switched to the Heltec CubeCell AB02 series that is specialized for battery operated use-cases.
 - I ran a long dozen of times up and down the staircase (third floor) down to the basement for this project - if you want to avoid that, free to buy me a coffee 
 
   [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/pavax)
@@ -29,10 +29,10 @@
 # Installation
 
 ## Heltec Cubecell AB02 (recommended)
-* [Based on Ardunio IDE](https://www.arduino.cc/en/software)
+* [Based on Arduino IDE](https://www.arduino.cc/en/software)
 * Follow the instruction provided here: https://github.com/HelTecAutomation/CubeCell-Arduino#installation-instructions
-  * The Cubcell Ardunio version 1.3.0 has some issues that were fixed but not released as of today. If the version 1.4.0 is not released yet, you have to follow the instructions to install the development repository of the heltec cubecell boards in ardunio.
-* Checkout the project ( directory `./heltec-cubecell `) and open the `.ino` file in the Ardunio IDE
+  * The CubeCell Arduino version 1.3.0 has some issues that were fixed but not released as of today. If the version 1.4.0 is not released yet, you have to follow the instructions to install the development repository of the Heltec CubeCell boards in Arduino.
+* Checkout the project ( directory `./heltec-cubecell `) and open the `.ino` file in the Arduino IDE
 
 
 ### Wiring
@@ -62,26 +62,26 @@ Connect as following:
 
 
 ### Debugging / Hints
-* use the serial monitor in ardunio and change the `DEFAULT_LOG_LEVEL` to debug
-  * **Attention**: Make sure once everything works as intented to change it back to `Info` as too much logging has a negative impact on the power consumption (even if there is not serial monitor connected)
-* The smart meter is not interacted with as long as the LoRaWAN has not been initalized / registred
-  * uncomment the line `deviceState = DEVICE_STATE_SEND` in the wakeup procedure to direclty read the smart meter data when the on-board user button is pressed without checking/waiting for a successfull LoRaWAN registration
+* use the serial monitor in Arduino and change the `DEFAULT_LOG_LEVEL` to debug
+  * **Attention**: Make sure once everything works as intended to change it back to `Info` as too much logging has a negative impact on the power consumption (even if there is not serial monitor connected)
+* The smart meter is not interacted with as long as the LoRaWAN has not been initialized / registered
+  * uncomment the line `deviceState = DEVICE_STATE_SEND` in the wakeup procedure to directly read the smart meter data when the on-board user button is pressed without checking/waiting for a successfully LoRaWAN registration
 * Send a LoRaWan downlink message from your gateway to change the sleep time on demand. The message is read the next time the node wakes up.
     ```
     Port: 4
     payload: <desired-sleep-time-seconds-in-hex>  // 04B0 = 1200 seconds  = 20 min
     ```
-* Make sure you have a decent LoRaWAN connectivity where your smart-meter is located or nearby by using an extension cord/antenna. I played arround with the a simple example sketch from Heltec to find a good spot with a decent connectivy: 
+* Make sure you have a decent LoRaWAN connectivity where your smart-meter is located or nearby by using an extension cord/antenna. I played around with the a simple example sketch from Heltec to find a good spot with a decent connectivity: 
 
     `Examples -> CubeCell -> LoRa -> LoRaWAN -> LoRaWAN`
 
-    And then verfied in my Lora-Gateway if the messages were received and if so, what their RSSI/SNR data were.
+    And then verified in my Lora-Gateway if the messages were received and if so, what their RSSI/SNR data were.
 
 
 ## ~~Heltec Wifi LoRA 32 V2 (deprecated)~~
 
 * Based on Platformio
-* Not sutable for my use-case  as it consumed to much power (even in deep-sleep) and thus couldn't get it to operate by battery
+* Not suitable for my use-case  as it consumed to much power (even in deep-sleep) and thus couldn't get it to operate by battery
 
 # Supported Smart Meters
 
