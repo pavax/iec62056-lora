@@ -16,8 +16,9 @@
 
 ## Micro Controllers
 - [Heltec Cubecell AB02-A](https://heltec.org/project/htcc-ab02a)
+  * Powered by [1/2 AA Battery (Saft LS14250 3.6V)](https://www.reichelt.com/ch/de/lithium-batterie-1-2aa-1100-mah-1er-pack-tadiran-sl750s-p247522.html)
 - [Heltec Cubecell AB02 Dev Board](https://heltec.org/project/htcc-ab02/)
-- [Heltec lora esp32 v2 Dev Board](https://heltec.org/project/wifi-lora-32/)
+- ~~[Heltec lora esp32 v2 Dev Board](https://heltec.org/project/wifi-lora-32/)~~
 
 ## Others
 - [Optical reading head](https://www.ebay.de/itm/313460034498)
@@ -27,7 +28,7 @@
 
 # Installation
 
-## Heltec Cubecell AB02 (currently used by me)
+## Heltec Cubecell AB02 (recommended)
 * [Based on Ardunio IDE](https://www.arduino.cc/en/software)
 * Follow the instruction provided here: https://github.com/HelTecAutomation/CubeCell-Arduino#installation-instructions
   * The Cubcell Ardunio version 1.3.0 has some issues that were fixed but not released as of today. If the version 1.4.0 is not released yet, you have to follow the instructions to install the development repository of the heltec cubecell boards in ardunio.
@@ -59,11 +60,17 @@ Connect as following:
     * Tools -> AT_SUPPORT -> ON
  - Check/Adjust the `ADJUSTME` comments 
 
+
 ### Debugging / Hints
 * use the serial monitor in ardunio and change the `DEFAULT_LOG_LEVEL` to debug
   * **Attention**: Make sure once everything works as intented to change it back to `Info` as too much logging has a negative impact on the power consumption (even if there is not serial monitor connected)
 * The smart meter is not interacted with as long as the LoRaWAN has not been initalized / registred
-  * uncomment the line `deviceState = DEVICE_STATE_SEND` in the wakeup procedure to direclty read the smart meter data when the button is pressed without checking/waiting for a successfull LoRaWAN registration
+  * uncomment the line `deviceState = DEVICE_STATE_SEND` in the wakeup procedure to direclty read the smart meter data when the on-board user button is pressed without checking/waiting for a successfull LoRaWAN registration
+* Send a LoRaWan downlink message from your gateway to change the sleep time on demand. The message is read the next time the node wakes up.
+    ```
+    Port: 4
+    payload: <desired-sleep-time-seconds-in-hex>  // 04B0 = 1200 seconds  = 20 min
+    ```
 * Make sure you have a decent LoRaWAN connectivity where your smart-meter is located or nearby by using an extension cord/antenna. I played arround with the a simple example sketch from Heltec to find a good spot with a decent connectivy: 
 
     `Examples -> CubeCell -> LoRa -> LoRaWAN -> LoRaWAN`
@@ -71,22 +78,14 @@ Connect as following:
     And then verfied in my Lora-Gateway if the messages were received and if so, what their RSSI/SNR data were.
 
 
-## Heltec Wifi LoRA 32 V2 (deprecated)
+## ~~Heltec Wifi LoRA 32 V2 (deprecated)~~
 
 * Based on Platformio
-* Not sutable for my use-cses as it consumed to much power (even in deep-sleep) and thus couldn't get it to operate by battery
-
-### Configration
-- Rename credentials_example.h to credentials.h and provide your OTAA data
-- Check/Adjust the `CHANGEME` comments
-
+* Not sutable for my use-case  as it consumed to much power (even in deep-sleep) and thus couldn't get it to operate by battery
 
 # Supported Smart Meters
 
-Feel free to test yours and let me know if it worked.
-
 - [Elster AS3000](https://wiki.volkszaehler.org/hardware/channels/meters/power/edl-ehz/elster_as3000)
-  configs
   ```
   SKIP_CHECKSUM_CHECK
   METER_IDENTIFIER "ELS"
@@ -158,13 +157,28 @@ Feel free to test yours and let me know if it worked.
           {{ value | int(value,16) }}
         {% endif %}
 
+    - name: "Smart Meter Battery Voltage"
+      unique_id: smart_meter_battery_voltage
+      icon: mdi:battery
+      unit_of_measurement: "mV"
+      state_class: measurement
+      device_class: voltage
+      state: >-
+        {% set payloadHex = trigger.json.data.payload_hex | default(none) %}
+        {% set value = payloadHex[14:18] %}
+        {% if value == '0000' %}
+          {{ none }}
+        {% else %}
+          {{ value | int(value,16) }}
+        {% endif %}
+
     - name: "Smart Meter Up-Counter"
       unique_id: smart_meter_upcounter
       icon: mdi:counter
       unit_of_measurement: "times"
       state: >-
         {% set payloadHex = trigger.json.data.payload_hex | default(none) %}
-        {% set value = payloadHex[14:16] %}
+        {% set value = payloadHex[18:20] %}
         {% if value == '00' %}
           {{ none }}
         {% else %}
@@ -172,5 +186,3 @@ Feel free to test yours and let me know if it worked.
         {% endif %}
 
 ```
-
-
