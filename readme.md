@@ -50,9 +50,9 @@ Connect as following:
 ### Configration
  - Rename credentials_example.h to credentials.h and provide your OTAA data
     * I generated random hex values for `devEui`, `appEu` and `appKey`
- - Set the correct boards
+ - Select the correct board in the Arduino IDE:
     * Tools -> Boards -> CubeCell (in sketchbook) -> HTCC - AB02A
- - Set the correct values in your ide
+ - Set the LORAWAN values from within in the Arduino IDE:
     * Tools -> LORAWAN_REGION  -> your-region (eg. EU_868)
     * Tools -> LORAWAN_CLASS -> A
     * Tools -> LORAWAN_DEVEUI -> CUSTOM
@@ -64,14 +64,14 @@ Connect as following:
 ### Debugging / Hints
 * use the serial monitor in Arduino and change the `DEFAULT_LOG_LEVEL` to debug
   * **Attention**: Make sure once everything works as intended to change it back to `Info` as too much logging has a negative impact on the power consumption (even if there is not serial monitor connected)
-* The smart meter is not interacted with as long as the LoRaWAN has not been initialized / registered
+* The smart meter is not interacted with as long as the LoRaWAN has not been initialized / OTAA-registered
   * uncomment the line `deviceState = DEVICE_STATE_SEND` in the wakeup procedure to directly read the smart meter data when the on-board user button is pressed without checking/waiting for a successfully LoRaWAN registration
 * Send a LoRaWan downlink message from your gateway to change the sleep time on demand. The message is read the next time the node wakes up.
     ```
     Port: 4
     payload: <desired-sleep-time-seconds-in-hex>  // 04B0 = 1200 seconds  = 20 min
     ```
-* Make sure you have a decent LoRaWAN connectivity where your smart-meter is located or nearby by using an extension cord/antenna. I played around with the a simple example sketch from Heltec to find a good spot with a decent connectivity: 
+* Make sure you have a decent LoRaWAN connectivity where your smart-meter is located or nearby by using an extension cord/antenna. I played around with a simple LoRaWAN example sketch from Heltec to find a good spot with a decent connectivity: 
 
     `Examples -> CubeCell -> LoRa -> LoRaWAN -> LoRaWAN`
 
@@ -81,7 +81,7 @@ Connect as following:
 ## ~~Heltec Wifi LoRA 32 V2 (deprecated)~~
 
 * Based on Platformio
-* Not suitable for my use-case  as it consumed to much power (even in deep-sleep) and thus couldn't get it to operate by battery
+* Not suitable for my use-case as it consumed to much power (even in deep-sleep) and thus couldn't get it to operate by battery
 
 # Supported Smart Meters
 
