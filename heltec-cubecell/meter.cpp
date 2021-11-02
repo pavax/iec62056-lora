@@ -79,8 +79,8 @@ void MeterReader::start_reading() {
 
 void MeterReader::send_request() {
   logger::debug("Step -> send_request");
-  logger::debug("/?!\r\n");
-  Serial1.write("/?!\r\n");
+  logger::debug(START_SEQUENCE);
+  Serial1.write(START_SEQUENCE);  
   Serial1.flush();
   step_ = RequestSent;
 }
@@ -99,7 +99,7 @@ void MeterReader::read_identification() {
 
   std::string idView = std::string(identification);
   lastReadChars_ = idView;
-  if (identifierChars_ != NULL && idView.find(identifierChars_) == std::string::npos) {
+  if ((identifierChars_ != NULL || strlen(identifierChars_) != 0) && idView.find(identifierChars_) == std::string::npos) {
     logger::err("identification not matched: %s", identification);
     change_status(IdentificationError_Id_Mismatch);
     return;
