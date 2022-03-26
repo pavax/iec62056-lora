@@ -40,9 +40,8 @@ enum Step
 
 class MeterReader {
   public:
-    MeterReader(HardwareSerial &serial, const char *identifierChars): serial_(serial)
+    MeterReader(HardwareSerial &serial): serial_(serial)
     {
-      identifierChars_ = identifierChars;
     }
     //MeterReader(MeterReader const &) = delete;
     //MeterReader(MeterReader &&) = delete;
@@ -109,6 +108,5 @@ class MeterReader {
     std::map<std::string, std::string> values_;
     size_t errors_ = 0, checksum_errors_ = 0, successes_ = 0;
     unsigned long startTime_;
-    const char *identifierChars_;
     std::string lastReadChars_;
 };

@@ -26,7 +26,7 @@
 
 // ADJUSTME: Identifier string to successful recognize the identification response from the smart meter. 
 //           Usually it's in the form of: /AAAB@xxxxxxx where AAA is the identifier string and B the max baud-rate info flag needed for the baud-switch.
-//           Hint: set th NULL if you don't know it
+//           Hint: set to NULL if you don't know it
 #define METER_IDENTIFIER "ELS"
 
  // ADJUSTME: Provide the OBIS Value from your smart-meter

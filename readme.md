@@ -47,7 +47,7 @@ Connect as following:
  * Optical Reading Head: RX -> RX2 (GPIO 29)
  * Optical Reading Head: TX -> TX2 (GPIO 39)
 
-### Configration
+### Configuration
  - Rename credentials_example.h to credentials.h and provide your OTAA data
     * I generated random hex values for `devEui`, `appEu` and `appKey`
  - Select the correct board in the Arduino IDE:
@@ -62,7 +62,7 @@ Connect as following:
 
 
 ### Debugging / Hints
-* use the serial monitor in Arduino and change the `DEFAULT_LOG_LEVEL` to debug
+* use the serial monitor in Arduino and change the `DEFAULT_LOG_LEVEL` to `debug` in the ino file
   * **Attention**: Make sure once everything works as intended to change it back to `Info` as too much logging has a negative impact on the power consumption (even if there is not serial monitor connected)
 * The smart meter is not interacted with as long as the LoRaWAN has not been initialized / OTAA-registered
   * uncomment the line `deviceState = DEVICE_STATE_SEND` in the wakeup procedure to directly read the smart meter data when the on-board user button is pressed without checking/waiting for a successfully LoRaWAN registration

@@ -13,14 +13,14 @@
 //  1200000  ->  20 min
 //  1800000  ->  30 min
 //  3600000  ->  60 min
-uint32_t sleepTime = 900000;
+uint32_t sleepTime = 1200000;
 
-/* BATTERY para */
-#define MAXBATT 3300
-#define MINBATT 2700
+/* BATTERY params */
+#define MAXBATT 3400
+#define MINBATT 3280
 
 /* METER para */
-static MeterReader reader(Serial1, METER_IDENTIFIER); 
+static MeterReader reader(Serial1);
 double power = 0;
 double totalkWh = 0;
 unsigned int uptimeCount = 0;
@@ -159,8 +159,7 @@ void updateBatteryData() {
   batteryPct = map(batteryVoltage, MINBATT, MAXBATT, 0, 100);
   if (batteryPct < 0) {
     batteryPct = 0;
-  }
-  if (batteryPct > 100) {
+  } else if (batteryPct > 100) {
     batteryPct = 100;
   }
   logger::debug("Battery-Voltage: %d", batteryVoltage);
