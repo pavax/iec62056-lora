@@ -23,6 +23,8 @@ uint32_t sleepTime = 1200000;
 static MeterReader reader(Serial1);
 double power = 0;
 double totalkWh = 0;
+double totalkWhTariff1 = 0;
+double totalkWhTariff2 = 0;
 unsigned int uptimeCount = 0;
 uint8_t batteryPct = 0;
 uint16_t batteryVoltage = 0;
@@ -34,7 +36,7 @@ float retrySleepTime = INITIAL_RETRY_SLEEP_TIME;        // Every time there's an
 const float BACKOFF_MULTIPLIER = 1.5;                   // 5    7.5   11.25   16.8    23.3    37.9    56.9    85.42     128
 
 /* LOGGER para */
-#define DEFAULT_LOG_LEVEL Info // DEBUG: set the Debug for more logging statements
+#define DEFAULT_LOG_LEVEL Debug // DEBUG: set the Debug for more logging statements
 
 /*LoraWan channelsmask, default channels 0-7*/
 uint16_t userChannelsMask[6] = { 0x00FF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 };
@@ -178,6 +180,12 @@ void updateMeterData() {
     } else if (key.compare(OBIS_VALUE_TOTAL_ENERGY) == 0) {
       totalkWh = atof(value);
     }
+    else if (key.compare(OBIS_VALUE_TOTAL_ENERGY_TARIFF1) == 0) {
+      totalkWhTariff1 = atof(value);
+    }
+    else if (key.compare(OBIS_VALUE_TOTAL_ENERGY_TARIFF2) == 0) {
+      totalkWhTariff2 = atof(value);
+    }
   }
 }
 
@@ -190,7 +198,7 @@ static void prepareTxFrame( uint8_t port )
     for example, if use REGION_CN470,
     the max value for different DR can be found in MaxPayloadOfDatarateCN470 refer to DataratesCN470 and BandwidthsCN470 in "RegionCN470.h".
   */
-  appDataSize = 10;
+  appDataSize = 18;
 
   // POWER (KW)
   uint16_t power_lora = power;
@@ -204,14 +212,28 @@ static void prepareTxFrame( uint8_t port )
   appData[4] = totalkWh_lora >> 8;
   appData[5] = totalkWh_lora & 0xFF;
 
+  // ENERGY (KWH) Tariff 1
+  uint32_t totalkWh_loraTariff1 = totalkWhTariff1 * 100;
+  appData[6] = totalkWh_loraTariff1 >> 24;
+  appData[7] = totalkWh_loraTariff1 >> 16;
+  appData[8] = totalkWh_loraTariff1 >> 8;
+  appData[9] = totalkWh_loraTariff1 & 0xFF;
+
+  // ENERGY (KWH) Tariff 1
+  uint32_t totalkWh_loraTariff2 = totalkWhTariff2 * 100;
+  appData[10] = totalkWh_loraTariff2 >> 24;
+  appData[11] = totalkWh_loraTariff2 >> 16;
+  appData[12] = totalkWh_loraTariff2 >> 8;
+  appData[13] = totalkWh_loraTariff2 & 0xFF;
+
   // BATTERY
-  appData[6] = batteryPct;
+  appData[14] = batteryPct;
   uint16_t batteryVoltage_lora = batteryVoltage;
-  appData[7] = batteryVoltage_lora >> 8;
-  appData[8] = batteryVoltage_lora & 0xFF;;
+  appData[15] = batteryVoltage_lora >> 8;
+  appData[16] = batteryVoltage_lora & 0xFF;
 
   // COUNTER
-  appData[9] = (uint8_t)uptimeCount;
+  appData[17] = (uint8_t)uptimeCount;
 }
 
 void onWakeUp() {
