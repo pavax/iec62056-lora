@@ -211,7 +211,7 @@ mqtt:
       unit_of_measurement: "%"
       device_class: battery
       value_template: >-
-        {% set value = value_json.uplink_message.decoded_payload.battery | default(none) %}
+        {% set value = value_json.uplink_message.decoded_payload.batteryPCT | default(none) %}
         {% if value == '00' %}
           {{ none }}
         {% else %}
@@ -225,7 +225,7 @@ mqtt:
       state_class: measurement
       device_class: battery
       value_template: >-
-        {% set value = value_json.uplink_message.decoded_payload.batteryPCT | default(none) %}
+        {% set value = value_json.uplink_message.decoded_payload.battery | default(none) %}
         {% if value == '0000' %}
           {{ none }}
         {% else %}
