@@ -219,7 +219,7 @@ mqtt:
         {% endif %}
     - state_topic: "v3/APPLICATION@ttn/devices/DEVICE_EUI/up"
       name: "Smart Meter Battery Voltage"
-      unique_id: smart_meter_battery
+      unique_id: smart_meter_battery_voltage
       icon: mdi:battery
       unit_of_measurement: "mV"
       state_class: measurement
