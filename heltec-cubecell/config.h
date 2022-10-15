@@ -27,13 +27,15 @@
 // ADJUSTME: Identifier string to successful recognize the identification response from the smart meter. 
 //           Usually it's in the form of: /AAAB@xxxxxxx where AAA is the identifier string and B the max baud-rate info flag needed for the baud-switch.
 //           Hint: set to NULL if you don't know it
-#define METER_IDENTIFIER "ELS"
+#define METER_IDENTIFIER "LGZ"
 
  // ADJUSTME: Provide the OBIS Value from your smart-meter
 #define OBIS_VALUE_POWER "1.7.0"
 
 // ADJUSTME: Provide the OBIS Value from your smart-meter
-#define OBIS_VALUE_TOTAL_ENERGY "1.8.0"     
+#define OBIS_VALUE_TOTAL_ENERGY "1.8.0"   
+#define OBIS_VALUE_TOTAL_ENERGY_TARIFF1 "1.8.1"  
+#define OBIS_VALUE_TOTAL_ENERGY_TARIFF2 "1.8.2"
 
 // The default baud rate at which the data is read
 #define INITIAL_BAUD_RATE 300 

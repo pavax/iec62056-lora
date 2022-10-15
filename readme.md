@@ -99,11 +99,154 @@ Connect as following:
   MAX_METER_READ_TIME  60
   ```
 
+- [Landys&Gyr ZMD120AR21](https://wiki.volkszaehler.org/hardware/channels/meters/power/edl-ehz/landisgyr_zmd120ap?redirect=1)
+  ```
+  SKIP_CHECKSUM_CHECK
+  METER_IDENTIFIER "LGZ"
+  BAUDRATE_CHANGE_DELAY: 500
+  PARITY_SETTING SERIAL_7E1 
+  OBIS_VALUE_POWER "1.7.0 "
+  OBIS_VALUE_TOTAL_ENERGY "1.8.0"
+  OBIS_VALUE_TOTAL_ENERGY_TARIFF1 "1.8.1"
+  OBIS_VALUE_TOTAL_ENERGY_TARIFF2 "1.8.2"
+  INITIAL_BAUD_RATE 300
+  SERIAL_IDENTIFICATION_READING_TIMEOUT 2000
+  SERIAL_READING_TIMEOUT  500
+  MAX_METER_READ_TIME  60
+  ```
+
+
 ## Acknowledgements 
 - https://github.com/mwdmwd/iec62056-mqtt
 - https://wiki.volkszaehler.org/hardware/channels/meters/power/edl-ehz/elster_as1440
 
-# Home-Assitant Template Sensors
+
+# TheThingsNetwork Integration
+For TTN we can define a uplink payload formater to convert the data to a be used later in Home-Assistant via MQTT
+
+```js
+function decodeUplink(input) {
+  return {
+    data: {
+      bytes: input.bytes,
+      power: (input.bytes[0] << 8) + (input.bytes[1]),
+      energy: (input.bytes[2] << 24) + (input.bytes[3] << 16) + (input.bytes[4] << 8) + (input.bytes[5]),
+      energy1: (input.bytes[6] << 24) + (input.bytes[7] << 16) + (input.bytes[8] << 8) + input.bytes[9],
+      energy2: (input.bytes[10] << 24) + (input.bytes[11] << 16) + (input.bytes[12] << 8) + input.bytes[13],
+      batteryPCT: input.bytes[14],
+      battery:(input.bytes[15] << 8) + input.bytes[16],
+      counter: input.bytes[17]
+    },
+    warnings: [],
+    errors: []
+  };
+}
+```
+
+The coresponding MQQT Sensor in HomeAssistant can be configured like this. Replace APPLICAITON and DEVICE_EUI with the name of you TTN aplication and ID of your device. You can find the required data in the TTN console.
+
+```yaml
+mqtt:
+  sensor:
+    - state_topic: "v3/APPLICATION@ttn/devices/DEVICE_EUI/up"
+      name: "Smart Meter Kwh"
+      unique_id: smart_meter_kwh
+      icon: mdi:chart-histogram
+      unit_of_measurement: "kWh"
+      state_class: total_increasing
+      device_class: energy
+      value_template: >-
+        {% set value = value_json.uplink_message.decoded_payload.energy | default(none) %}
+        {% if value == '00000000' %}
+          {{ none }}
+        {% else %}
+          {{ value | int(value,16)/100|float }}
+        {% endif %}
+    - state_topic: "v3/APPLICATION@ttn/devices/DEVICE_EUI/up"
+      name: "Smart Meter Kwh Peak"
+      unique_id: smart_meter_kwh_peak
+      icon: mdi:chart-histogram
+      unit_of_measurement: "kWh"
+      state_class: total_increasing
+      device_class: energy
+      value_template: >-
+        {% set value = value_json.uplink_message.decoded_payload.energy1 | default(none) %}
+        {% if value == '00000000' %}
+          {{ none }}
+        {% else %}
+          {{ value | int(value,16)/100|float }}
+        {% endif %}
+    - state_topic: "v3/APPLICATION@ttn/devices/DEVICE_EUI/up"
+      name: "Smart Meter Kwh OffPeak"
+      unique_id: smart_meter_kwh_offPeak
+      icon: mdi:chart-histogram
+      unit_of_measurement: "kWh"
+      state_class: total_increasing
+      device_class: energy
+      value_template: >-
+        {% set value = value_json.uplink_message.decoded_payload.energy2 | default(none) %}
+        {% if value == '00000000' %}
+          {{ none }}
+        {% else %}
+          {{ value | int(value,16)/100|float }}
+        {% endif %}
+    - state_topic: "v3/APPLICATION@ttn/devices/DEVICE_EUI/up"
+      name: "Smart Meter Power"
+      unique_id: smart_meter_power
+      icon: mdi:flash-outline
+      unit_of_measurement: "W"
+      state_class: measurement
+      device_class: power
+      value_template: >-
+        {% set value = value_json.uplink_message.decoded_payload.power | default(none) %}
+        {% if value == '0000' %}
+          {{ none }}
+        {% else %}
+          {{ value | int(value,16) }}
+        {% endif %}
+    - state_topic: "v3/APPLICATION@ttn/devices/DEVICE_EUI/up"
+      name: "Smart Meter Battery"
+      unique_id: smart_meter_battery
+      icon: mdi:battery
+      unit_of_measurement: "%"
+      device_class: battery
+      value_template: >-
+        {% set value = value_json.uplink_message.decoded_payload.batteryPCT | default(none) %}
+        {% if value == '00' %}
+          {{ none }}
+        {% else %}
+          {{ value | int(value,16) }}
+        {% endif %}
+    - state_topic: "v3/APPLICATION@ttn/devices/DEVICE_EUI/up"
+      name: "Smart Meter Battery Voltage"
+      unique_id: smart_meter_battery_voltage
+      icon: mdi:battery
+      unit_of_measurement: "mV"
+      state_class: measurement
+      device_class: battery
+      value_template: >-
+        {% set value = value_json.uplink_message.decoded_payload.battery | default(none) %}
+        {% if value == '0000' %}
+          {{ none }}
+        {% else %}
+          {{ value | int(value,16) }}
+        {% endif %}
+    - state_topic: "v3/APPLICATION@ttn/devices/DEVICE_EUI/up"
+      name: "Smart Meter Up-Counter"
+      unique_id: smart_meter_upcounter
+      icon: mdi:counter
+      unit_of_measurement: "times"
+      value_template: >-
+        {% set value = value_json.uplink_message.decoded_payload.counter | default(none) %}
+        {% if value == '00' %}
+          {{ none }}
+        {% else %}
+          {{ value | int(value,16) }}
+        {% endif %}
+```
+
+
+# Home-Assistant Template Sensors
 
 ```yaml
 

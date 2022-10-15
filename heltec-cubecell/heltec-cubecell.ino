@@ -23,6 +23,8 @@ uint32_t sleepTime = 1200000;
 static MeterReader reader(Serial1);
 double power = 0;
 double totalkWh = 0;
+double totalkWhTariff1 = 0;
+double totalkWhTariff2 = 0;
 unsigned int uptimeCount = 0;
 uint8_t batteryPct = 0;
 uint16_t batteryVoltage = 0;
@@ -177,6 +179,10 @@ void updateMeterData() {
       power = atof(value) * 1000;
     } else if (key.compare(OBIS_VALUE_TOTAL_ENERGY) == 0) {
       totalkWh = atof(value);
+    } else if (key.compare(OBIS_VALUE_TOTAL_ENERGY_TARIFF1) == 0) {
+      totalkWhTariff1 = atof(value);
+    } else if (key.compare(OBIS_VALUE_TOTAL_ENERGY_TARIFF2) == 0) {
+      totalkWhTariff2 = atof(value);
     }
   }
 }
@@ -190,7 +196,7 @@ static void prepareTxFrame( uint8_t port )
     for example, if use REGION_CN470,
     the max value for different DR can be found in MaxPayloadOfDatarateCN470 refer to DataratesCN470 and BandwidthsCN470 in "RegionCN470.h".
   */
-  appDataSize = 10;
+  appDataSize = 18;
 
   // POWER (KW)
   uint16_t power_lora = power;
@@ -204,14 +210,28 @@ static void prepareTxFrame( uint8_t port )
   appData[4] = totalkWh_lora >> 8;
   appData[5] = totalkWh_lora & 0xFF;
 
+  // ENERGY (KWH) Tariff 1
+  uint32_t totalkWh_loraTariff1 = totalkWhTariff1 * 100;
+  appData[6] = totalkWh_loraTariff1 >> 24;
+  appData[7] = totalkWh_loraTariff1 >> 16;
+  appData[8] = totalkWh_loraTariff1 >> 8;
+  appData[9] = totalkWh_loraTariff1 & 0xFF;
+
+  // ENERGY (KWH) Tariff 1
+  uint32_t totalkWh_loraTariff2 = totalkWhTariff2 * 100;
+  appData[10] = totalkWh_loraTariff2 >> 24;
+  appData[11] = totalkWh_loraTariff2 >> 16;
+  appData[12] = totalkWh_loraTariff2 >> 8;
+  appData[13] = totalkWh_loraTariff2 & 0xFF;
+
   // BATTERY
-  appData[6] = batteryPct;
+  appData[14] = batteryPct;
   uint16_t batteryVoltage_lora = batteryVoltage;
-  appData[7] = batteryVoltage_lora >> 8;
-  appData[8] = batteryVoltage_lora & 0xFF;;
+  appData[15] = batteryVoltage_lora >> 8;
+  appData[16] = batteryVoltage_lora & 0xFF;
 
   // COUNTER
-  appData[9] = (uint8_t)uptimeCount;
+  appData[17] = (uint8_t)uptimeCount;
 }
 
 void onWakeUp() {
@@ -251,6 +271,8 @@ void setup() {
 
   reader.start_monitoring(OBIS_VALUE_POWER);
   reader.start_monitoring(OBIS_VALUE_TOTAL_ENERGY);
+  reader.start_monitoring(OBIS_VALUE_TOTAL_ENERGY_TARIFF1);
+  reader.start_monitoring(OBIS_VALUE_TOTAL_ENERGY_TARIFF2);
 
 #if(AT_SUPPORT)
   enableAt();
@@ -290,6 +312,8 @@ void loop() {
           logger::debug("Uptime Count:    %d", uptimeCount);
           logger::debug("Battery:         %d [%]", batteryPct);
           logger::debug("Energy:          %d [kWh]", (int)(totalkWh));
+          logger::debug("Energy Tariff 1:          %d [kWh]", (int)(totalkWhTariff1));
+          logger::debug("Energy Tariff 2:          %d [kWh]", (int)(totalkWhTariff2));
           logger::debug("Power:           %d [w]", (int)(power));
           logger::debug("sleepTime:       %d [s]", (int)(sleepTime / 1000.0));
           logger::debug("retrySleepTime:  %d [s]", (int)(retrySleepTime / 1000.0 ));
